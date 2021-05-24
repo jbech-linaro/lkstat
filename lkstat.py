@@ -113,6 +113,11 @@ def get_parser():
     parser = ArgumentParser(description="Script used to generate Freeplane "
                             + "mindmap files")
 
+    # This is use when people in Linaro aren't using their email address.
+    parser.add_argument('--disable-altname', required=False,
+                        action="store_true", default=False,
+                        help="Use alternative names (from cfg.yaml) to the tree")
+
     parser.add_argument('--assignee', required=False,
                         action="store_true", default=False,
                         help="Add assignees (from cfg.yaml) to the tree")
@@ -225,12 +230,24 @@ def get_non_linaro_email():
 def is_assignee(l):
     for a in get_assignees():
         if a in l.strip():
-            print("l: {}, assignee: {}".format(l.strip(), a))
+            # print("l: {}, assignee: {}".format(l.strip(), a))
             return True
 
     return False
 
-def start_parsing(f, kernel_path, since=None, scaling=1, add_assignee=False):
+
+def is_altname(l):
+    for a in get_non_linaro_email():
+        if a in l.strip():
+            alt_eng_line = re.match(r'^M:\t(' + a + ') <.*@.*', l, re.I)
+            # print("l: {}, altname: {}".format(l.strip(), a))
+            if alt_eng_line is not None:
+                return a
+    return None
+
+
+def start_parsing(f, kernel_path, add_assignee, use_altname, since=None,
+                  scaling=1):
     maintainer_file = "{}/MAINTAINERS".format(kernel_path)
     parse_started = False
     read_subsystem = False
@@ -259,13 +276,23 @@ def start_parsing(f, kernel_path, since=None, scaling=1, add_assignee=False):
                 read_subsystem = False
                 continue
 
+            alt_eng_line = is_altname(l) if use_altname else None
+
             # Read and save Linaro maintainers
             eng_line = re.match(r'^M:\t(.*) <.*@linaro.org.*', l, re.I)
-            if eng_line is not None:
-                engineer = eng_line.groups(0)[0]
+            if eng_line is not None or alt_eng_line is not None:
+                if eng_line:
+                    engineer = eng_line.groups(0)[0]
+                elif alt_eng_line:
+                    engineer = alt_eng_line
+                else:
+                    print("ERROR: shouldn't happen!")
+                    exit(1)
+
                 if is_assignee(engineer):
-                    if add_assignee == False:
+                    if not add_assignee:
                         continue
+
                 if len(engineers) + len(engineer) > len(engineer):
                     engineers += ", "
                 engineers += engineer
@@ -327,11 +354,16 @@ def main(argv):
     # Convert it back to a date object so we can calculate a scaling
     # factor.
     date_time_obj = datetime.datetime.strptime(since, "%Y-%m-%d")
-    print(date_time_obj)
-    scaling = get_scaling(date_time_obj)
+    print("{}".format(date_time_obj))
 
+    scaling = get_scaling(date_time_obj)
     print("since: {}, scaling: {}".format(since, scaling))
-    nodes = start_parsing(f, args.path, since, scaling)
+
+    use_altname = False if args.disable_altname else True
+    print("Use altname: {}".format(use_altname))
+
+    nodes = start_parsing(f, args.path, args.assignee, use_altname, since,
+                          scaling)
 
     for n in nodes:
         n.add_git_stats(get_git_stats(args.path, n, since, args.author))

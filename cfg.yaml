@@ -1,0 +1,6 @@
+non_linaro_email:
+        - Arnd Bergmann
+
+assignees:
+        - Linus Walleij
+        - Benjamin Gaignard

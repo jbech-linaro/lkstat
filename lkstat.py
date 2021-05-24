@@ -11,6 +11,12 @@ import sys
 import unicodedata
 import yaml
 
+###############################################################################
+# Globals
+###############################################################################
+assignees = None
+altemail = None
+
 
 ###############################################################################
 # Class node
@@ -107,6 +113,10 @@ def get_parser():
     parser = ArgumentParser(description="Script used to generate Freeplane "
                             + "mindmap files")
 
+    parser.add_argument('--assignee', required=False,
+                        action="store_true", default=False,
+                        help="Add assignees (from cfg.yaml) to the tree")
+
     parser.add_argument('-a', '--author', required=False,
                         action="store_true", default=False,
                         help="If set, git statistic only count the commit "
@@ -188,7 +198,39 @@ def get_git_stats(kernel_path, node, since, author):
     return nbr_patches
 
 
-def start_parsing(f, kernel_path, since=None, scaling=1):
+def get_assignees():
+    global assignees
+
+    # Only load if form the yaml-file once.
+    if assignees is None:
+        with open('cfg.yaml') as f:
+            data = yaml.load(f, Loader=yaml.FullLoader)
+            assignees = data['assignees']
+
+    return assignees
+
+
+def get_non_linaro_email():
+    global altemail
+
+    # Only load if form the yaml-file once.
+    if altemail is None:
+        with open('cfg.yaml') as f:
+            data = yaml.load(f, Loader=yaml.FullLoader)
+            altemail = data['non_linaro_email']
+
+    return altemail
+
+
+def is_assignee(l):
+    for a in get_assignees():
+        if a in l.strip():
+            print("l: {}, assignee: {}".format(l.strip(), a))
+            return True
+
+    return False
+
+def start_parsing(f, kernel_path, since=None, scaling=1, add_assignee=False):
     maintainer_file = "{}/MAINTAINERS".format(kernel_path)
     parse_started = False
     read_subsystem = False
@@ -196,6 +238,8 @@ def start_parsing(f, kernel_path, since=None, scaling=1):
     engineers = ""
     files = ""
     nodes = []
+
+    altnames = get_non_linaro_email()
 
     with open(maintainer_file, 'r') as mf:
         for l in mf:
@@ -219,8 +263,9 @@ def start_parsing(f, kernel_path, since=None, scaling=1):
             eng_line = re.match(r'^M:\t(.*) <.*@linaro.org.*', l, re.I)
             if eng_line is not None:
                 engineer = eng_line.groups(0)[0]
-                if "Walleij" in engineer:
-                    continue
+                if is_assignee(engineer):
+                    if add_assignee == False:
+                        continue
                 if len(engineers) + len(engineer) > len(engineer):
                     engineers += ", "
                 engineers += engineer

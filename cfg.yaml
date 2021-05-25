@@ -1,5 +1,8 @@
 non_linaro_email:
         - Arnd Bergmann
+        - Viresh Kumar
+        - Alex Elder
+        - Shawn Guo
 
 assignees:
         - Linus Walleij

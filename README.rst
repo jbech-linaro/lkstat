@@ -32,6 +32,14 @@ There are a couple of different parameters to tweak the query.
                             Output filename
       -v                    Output some verbose debugging info
 
+Install
+*******
+
+.. code-block:: bash
+
+    $ git clone https://github.com/jbech-linaro/lkstat.git
+    $ pip install -r requirements.txt
+
 
 Default
 *******

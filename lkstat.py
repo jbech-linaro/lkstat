@@ -4,6 +4,7 @@
 from argparse import ArgumentParser
 
 import datetime
+import git
 import os
 import re
 import subprocess
@@ -173,9 +174,10 @@ def orphan_node_end(f):
 
 def get_git_stats(kernel_path, node, since, author):
     os.chdir(kernel_path)
-    cmd = ["log"]
+
+    cmd = []
     if author:
-        cmd.append("--author='{}'".format(node.engineers))
+        cmd.append('--author={}'.format(node.engineers))
         # Currently it doesn't support multiple authors, hence mark it in blue
         if ", " in node.engineers:
             node.set_color("#3333FF")
@@ -183,24 +185,21 @@ def get_git_stats(kernel_path, node, since, author):
     cmd.append("--oneline")
     for f in node.files.split(' '):
         cmd.append(f)
-    str_cmd = " ".join(cmd)
-    process = None
+
+    g = git.Git(kernel_path)
+    log = ""
 
     # Needed to catch then files are listen in the MAINTAINERS file, but
     # doesn't actually exist in the tree.
     try:
-        process = subprocess.check_output("git {}".format(str_cmd), shell=True)
+        log = g.log(cmd)
 
-    except subprocess.CalledProcessError as e:
-        print("Error: {}".format(e.output.decode()))
+    except git.exc.GitCommandError as e:
+        print("Error: {}".format(e))
         node.set_color("#C0C0C0")
         return -1
 
-    nbr_patches = len(process.split(b"\n")) - 1
-    if nbr_patches < 0:
-        nbr_patches = 0
-
-    return nbr_patches
+    return len(log.split("\n"))
 
 
 def get_assignees():

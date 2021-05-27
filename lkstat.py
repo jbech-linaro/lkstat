@@ -76,8 +76,8 @@ class Node():
         f.write(xml_info_start)
 
         if author and ", " in self.engineers:
-            xml_strikethrough = "<font STRIKETHROUGH=\"true\"/>"
-            f.write(xml_strikethrough)
+            xml_bold = "<font BOLD=\"true\"/>"
+            f.write(xml_bold)
 
         xml_rich = "<richcontent TYPE=\"NOTE\"> <html> <head> </head> <body> <p> Maintainer: {}</p> <p> Stats: {}</p> </body> </html> </richcontent>\n".format(self.engineers, self.stats)
         f.write(xml_rich)
@@ -177,10 +177,10 @@ def get_git_stats(kernel_path, node, since, author):
 
     cmd = []
     if author:
-        cmd.append('--author={}'.format(node.engineers))
-        # Currently it doesn't support multiple authors, hence mark it in blue
+        engs = node.engineers
         if ", " in node.engineers:
-            node.set_color("#3333FF")
+            engs = "\|".join(engs.split(', '))
+        cmd.append('--author={}'.format(engs))
     cmd.append("--since='{}'".format(since))
     cmd.append("--oneline")
     for f in node.files.split(' '):

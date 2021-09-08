@@ -3,6 +3,8 @@ non_linaro_email:
         - Viresh Kumar
         - Alex Elder
         - Shawn Guo
+        - Jassi Brar
+        - Masami Hiramatsu
 
 assignees:
         - Linus Walleij

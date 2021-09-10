@@ -5,7 +5,9 @@ non_linaro_email:
         - Shawn Guo
         - Jassi Brar
         - Masami Hiramatsu
+        - Kunihiko Hayashi
 
 assignees:
         - Linus Walleij
         - Benjamin Gaignard
+        - Kunihiko Hayashi
